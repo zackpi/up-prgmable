@@ -20,13 +20,19 @@ stop:	HLT
 ; HELPER ;
 ;--------;
 
-; 8 BIT SIGNED ADD:  A <- arg0 + arg1 
-; modifies: PSW,B,HL
-add_8b:	LXI H, arg	; enter subroutine procedure: read from arg storage
+; 8 BIT ADD:  ans0 <- arg0 + arg1 
+add_8b:	PUSH PSW	; subroutine entry procedure
+	PUSH B
+	LXI H, arg
 	MOV A,M
 	INR L
 	MOV B,M
+
 	ADD B
+	STA ans
+
+	POP B		; exit procedure
+	POP PSW
 	RET
 
 
@@ -34,14 +40,13 @@ add_8b:	LXI H, arg	; enter subroutine procedure: read from arg storage
 ; USER ;
 ;------;
 
-; user entry point	
-main:	LXI H, arg	; calling subroutine procedure: write to arg storage
+; user entry point
+main:	LXI H, arg	; caller entry procedure	
 	MVI M, 2Ah	; arg0 	<- 2Ah
 	INR L
 	MVI M, 57h	; arg1 	<- 57h
-	CALL add_8b	;A 	<- add_8b(2Ah,57h)
+	CALL add_8b	; ans0 	<- add_8b(2Ah,57h)
 	
-	STA ans		; store answer and halt 
 	JMP stop
 
 

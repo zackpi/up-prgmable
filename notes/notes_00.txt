@@ -1,0 +1,20 @@
+Here's the 8085 simulator I'm using. It's the best one I've found:
+
+	https://github.com/GNUSim8085/GNUSim8085
+
+Check out the code I wrote to see how I plan to do procedure calls and setting up the memory
+
+PROCEDURE CALL:
+
+	This is a slightly slower caller/receiver model because it doesn't destroy registers. This will make it easier for users, so I think it's worth it to do this for more complex functions (unlike the stupid simple one I used in the example)
+
+	caller:
+		store arguments in "arg" storage
+		call automatically pushes PC to the STACK
+
+	subroutine:
+		save registers in STACK
+		read args from "arg" storage
+		return value in "and" storage
+		restore registers from STACK
+		ret pops PC from STACK, so pair all PUSHs w/ POPs inside subrout
