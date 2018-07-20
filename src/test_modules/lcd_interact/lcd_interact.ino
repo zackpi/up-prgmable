@@ -42,7 +42,7 @@ bool lcdBusy(){
   digitalWrite(E, HIGH);
   digitalWrite(E, LOW);
   
-  return !busy;
+  return busy;
 }
 
 void lcdWriteNibb(bits4, rs){
