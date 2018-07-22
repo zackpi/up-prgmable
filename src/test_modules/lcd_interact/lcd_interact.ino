@@ -5,37 +5,22 @@
 #define RW 4
 #define E 5
 
-#define DB4 6
-#define DB5 7
-#define DB6 8
-#define DB7 9
+#define DB4 10
+#define DB5 11
+#define DB6 12
+#define DB7 13
 
-void setup() {
-  pinMode(RS, OUTPUT);
-  pinMode(RW, OUTPUT);
-  pinMode(E, OUTPUT);
-  
-  pinMode(DB4, OUTPUT);
-  pinMode(DB5, OUTPUT);
-  pinMode(DB6, OUTPUT);
-  pinMode(DB7, OUTPUT);
-  
-  lcdInit();
-}
-  
-void loop() {
-  
-}
+unsigned long sec = 0;
+int c = 0;
 
-
-bool lcdBusy(){
+boolean lcdBusy(){
   // setup read from Busy Flag
   digitalWrite(RS, LOW);
   digitalWrite(RW, HIGH);
   digitalWrite(E, HIGH);
   
   // read BF
-  bool busy = digitalRead(DB7);
+  boolean busy = digitalRead(DB7);
   
   // complete operation
   digitalWrite(E, LOW);
@@ -45,21 +30,28 @@ bool lcdBusy(){
   return busy;
 }
 
-void lcdWriteNibb(bits4, rs){
+void lcdSendNibb(byte bits4, int rs){
   digitalWrite(RS, rs);
   digitalWrite(RW, LOW);
    
-  digitalWrite(E, HIGH);
   digitalWrite(DB4, bits4 & 0x1);
   digitalWrite(DB5, bits4 & 0x2);
   digitalWrite(DB6, bits4 & 0x4);
   digitalWrite(DB7, bits4 & 0x8);
+  
+  digitalWrite(E, HIGH);
   digitalWrite(E, LOW);
 }
 
-void lcdWriteByte(bits8, rs){
-  lcdWriteNibb((bits8 & 0xF0) >> 4, rs);
-  lcdWriteNibb(bits8 & 0xF, rs);
+void lcdWriteByte(byte bits8, int rs){
+  if(rs == DATA && (bits8 < 0x20 || (bits8 > 0x7F && bits8 < 0xA1))){
+    lcdSendNibb(0xF, DATA);
+    lcdSendNibb(0xF, DATA);
+  }else{
+    lcdSendNibb((bits8 & 0xF0) >> 4, rs);
+    lcdSendNibb(bits8 & 0xF, rs);
+  }
+  lcdBusy();
 }
 
 void lcdWriteString(char str[], int len){
@@ -75,34 +67,54 @@ void lcdInit(){
   */
 
   // intercept 8-bit operation during startup
-  delay(50);
-  lcdWriteNibb(0x3, INSTR);
+  delay(100);
+  lcdSendNibb(0x3, INSTR);
   delay(10);
-  lcdWriteNibb(0x3, INSTR);
-  delay(1);
-  lcdWriteNibb(0x3, INSTR);
+  lcdSendNibb(0x3, INSTR);
+  delay(5);
+  lcdSendNibb(0x3, INSTR);
   
   // enable 4-bit operation
-  lcdWriteNibb(0x2, INSTR);
+  lcdSendNibb(0x2, INSTR);
   
   // Function Set: 0 0 1 DL N F X X    (X = dont care)
   // DL=0 for 4-bit op, N=1 for 2 lines, F=0 for 5x8 font
-  while(lcdBusy());
-  lcdWriteByte(0x28, INSTR);
+  lcdSendNibb(0x2, INSTR);
+  lcdSendNibb(0x8, INSTR);
   
   // Display On/Off: 0 0 0 0 1 D C B
   // D=1 for display on, C=1 for cursor on, B=1 for blinking cursor char
-  while(lcdBusy());
-  lcdWriteByte(0x0F, INSTR);
+  lcdSendNibb(0x0, INSTR);
+  lcdSendNibb(0xF, INSTR);
   
   // Display Clear: 0 0 0 0 0 0 0 1
-  while(lcdBusy());
-  lcdWriteByte(0x01, INSTR);
-  
+  lcdSendNibb(0x0, INSTR);
+  lcdSendNibb(0x1, INSTR);
   
   // Entry Mode Set: 0 0 0 0 0 1 I/D S
   // I/D = 1 for inc DDRAM addr, S=0 for no screen-shift
-  while(lcdBusy());
-  lcdWriteByte(0x06, INSTR);
+  lcdSendNibb(0x0, INSTR);
+  lcdSendNibb(0x6, INSTR);
+}
+
+void setup() {
+  pinMode(RS, OUTPUT);
+  pinMode(RW, OUTPUT);
+  pinMode(E, OUTPUT);
+  
+  pinMode(DB4, OUTPUT);
+  pinMode(DB5, OUTPUT);
+  pinMode(DB6, OUTPUT);
+  pinMode(DB7, OUTPUT);
+  
+  lcdInit();
+}
+  
+void loop() {
+  for(int i = 0; i < 16; i++)
+    lcdWriteString("Jenna", 5);
+  
+  lcdWriteByte(0x20, DATA);
+  delay(250);
 }
 
